@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工作 · 学习 · 生活 管理台</title>
+<style>
+:root{
+  --bg:#f1f3f9; --card:#fff; --text:#1e293b; --muted:#64748b; --line:#e2e8f0;
+  --primary:#4f46e5; --ok:#10b981; --bad:#ef4444; --warn:#f59e0b;
+  --sidebar-w:228px;
+  --sidebar-w-collapsed:68px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--bg); color:var(--text); font-size:14px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ================= 布局 ================= */
+.layout{display:flex;min-height:100vh;}
+
+/* -------- 侧栏 -------- */
+.sidebar{
+  width:var(--sidebar-w);
+  background:#fff;
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;flex-shrink:0;
+  transition:width .22s ease;
+  z-index:20;
+}
+.sidebar.collapsed{width:var(--sidebar-w-collapsed);}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  padding:16px 14px;min-height:60px;
+  border-bottom:1px solid #f1f5f9;
+}
+.brand-icon{font-size:20px;flex-shrink:0;line-height:1;}
+.brand-text{font-weight:700;font-size:13.5px;white-space:nowrap;color:#1e293b;overflow:hidden;line-height:1.3;}
+.sidebar.collapsed .brand-text{display:none;}
+.nav{flex:1;padding:10px 8px;overflow-y:auto;overflow-x:hidden;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;width:100%;
+  border:none;background:transparent;padding:10px 12px;border-radius:10px;
+  cursor:pointer;font-family:inherit;font-size:14px;color:#64748b;font-weight:500;
+  transition:.15s;margin-bottom:2px;text-align:left;
+}
+.nav-item:hover{background:#f1f5f9;color:#1e293b;}
+.nav-item.active{background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(79,70,229,.3);}
+.nav-item.active:hover{background:#4338ca;}
+.ni-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center;line-height:1;}
+.ni-text{white-space:nowrap;overflow:hidden;}
+.sidebar.collapsed .ni-text{display:none;}
+.sidebar.collapsed .nav-item{justify-content:center;padding:10px 8px;}
+
+.sidebar-toggle{
+  border:none;background:transparent;padding:13px;
+  cursor:pointer;font-family:inherit;font-size:13px;color:#94a3b8;
+  border-top:1px solid #f1f5f9;display:flex;align-items:center;gap:8px;justify-content:center;
+  transition:.15s;
+}
+.sidebar-toggle:hover{background:#f8fafc;color:#475569;}
+.sidebar.collapsed .sidebar-toggle{padding:13px 8px;}
+.sidebar.collapsed .sidebar-toggle .ni-text{display:none;}
+.sidebar-toggle .ni-icon{transition:transform .22s ease;}
+.sidebar.collapsed .sidebar-toggle .ni-icon{transform:rotate(180deg);}
+
+/* -------- 主区 -------- */
+.main{flex:1;min-width:0;padding:22px 26px 100px;}
+.main-inner{max-width:1180px;margin:0 auto;}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+.topbar h1{font-size:20px;margin:0;letter-spacing:.3px;}
+.topbar .sub{color:var(--muted);font-size:13px;margin-top:2px;}
+.topbar-actions{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* -------- 移动端 -------- */
+.mobile-toggle{display:none;}
+@media(max-width:820px){
+  .sidebar{position:fixed;left:0;top:0;height:100vh;box-shadow:6px 0 24px rgba(15,23,42,.12);}
+  .sidebar.collapsed{width:0;overflow:hidden;border-right:none;}
+  .sidebar.collapsed .sidebar-toggle{display:none;}
+  .main{padding:16px 14px 100px;}
+  .mobile-toggle{
+    display:flex;position:fixed;bottom:20px;right:20px;width:52px;height:52px;
+    border-radius:50%;background:var(--primary);color:#fff;border:none;
+    box-shadow:0 4px 16px rgba(79,70,229,.4);font-size:22px;
+    align-items:center;justify-content:center;cursor:pointer;z-index:30;
+  }
+}
+
+/* ================= 通用 ================= */
+.btn{border:none;border-radius:10px;padding:9px 16px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:500;transition:.15s;}
+.btn.primary{background:var(--primary);color:#fff;}
+.btn.primary:hover{background:#4338ca;}
+.btn.ghost{background:#eef1f7;color:#475569;}
+.btn.ghost:hover{background:#e2e7f0;}
+.btn.danger{background:#fee2e2;color:#b91c1c;}
+.btn.danger:hover{background:#fecaca;}
+.btn.sm{padding:5px 12px;font-size:13px;border-radius:8px;}
+
+.banner{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;padding:14px 18px;border-radius:14px;margin-bottom:14px;cursor:pointer;font-size:14px;box-shadow:0 4px 14px rgba(79,70,229,.28);transition:.15s;}
+.banner:hover{filter:brightness(1.07);}
+.banner.warm{background:linear-gradient(135deg,#f59e0b,#ef4444);box-shadow:0 4px 14px rgba(245,158,11,.28);}
+
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fade .18s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+.panel-card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(15,23,42,.07);}
+.panel-card h3{margin:0 0 14px;font-size:15px;font-weight:600;}
+
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;font-weight:500;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:680px){.row{grid-template-columns:1fr;}}
+
+input[type=text],input[type=number],input[type=date],textarea,select{
+  width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;
+  font-family:inherit;font-size:14px;color:var(--text);background:#fff;outline:none;transition:.15s;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.12);}
+textarea{resize:vertical;min-height:70px;line-height:1.6;}
+input[type=color]{padding:2px;height:40px;cursor:pointer;}
+
+.empty{background:#fff;border-radius:16px;padding:36px 24px;text-align:center;color:var(--muted);font-size:14px;box-shadow:0 1px 4px rgba(15,23,42,.07);}
+.muted{color:var(--muted);}
+.ok{color:var(--ok);}
+.bad{color:var(--bad);}
+.tiny{font-size:11px;line-height:1.4;}
+
+/* 分类筛选 */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.fchip{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;color:#475569;font-weight:500;transition:.15s;display:flex;align-items:center;gap:6px;}
+.fchip:hover{border-color:#c7d2fe;}
+.fchip.active{background:var(--fc,#4f46e5);border-color:var(--fc,#4f46e5);color:#fff;box-shadow:0 2px 8px rgba(79,70,229,.24);}
+.fchip .cnt{background:rgba(0,0,0,.08);border-radius:99px;padding:0 7px;font-size:11.5px;}
+.fchip.active .cnt{background:rgba(255,255,255,.25);}
+
+/* ================= 目标卡片 ================= */
+.goal-card{background:#fff;border-radius:16px;padding:18px 20px 16px;margin-bottom:16px;
+  box-shadow:0 1px 4px rgba(15,23,42,.07);border-left:4px solid var(--c);transition:.3s;}
+.goal-card.flash{box-shadow:0 0 0 4px rgba(79,70,229,.25),0 1px 4px rgba(15,23,42,.07);}
+.gc-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.gc-head h3{margin:0;font-size:16px;flex:1;font-weight:600;line-height:1.4;min-width:180px;}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;}
+.cat-tag{font-size:11.5px;padding:2px 10px;border-radius:99px;font-weight:600;white-space:nowrap;display:inline-block;}
+.icon-btn{border:none;background:transparent;cursor:pointer;font-size:14px;padding:4px 6px;border-radius:6px;opacity:.5;transition:.15s;}
+.icon-btn:hover{opacity:1;background:#f1f5f9;}
+.gc-meta{display:flex;gap:14px;font-size:12.5px;color:var(--muted);margin-bottom:12px;flex-wrap:wrap;}
+.gc-meta .overdue{color:var(--bad);font-weight:600;}
+.gc-meta .warn{color:var(--warn);font-weight:600;}
+
+.bar{height:8px;background:#eef1f7;border-radius:99px;overflow:hidden;flex:1;}
+.bar-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+.progress-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.prog-text{font-size:12.5px;color:var(--muted);white-space:nowrap;}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.stat{background:#f8fafc;border-radius:10px;padding:9px 10px;text-align:center;}
+.stat label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:1px;}
+.stat b{font-size:15px;font-weight:600;}
+.stat .tiny{font-size:11px;line-height:1.4;}
+
+.hint-block{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px;color:#78350f;}
+.hint-line{display:flex;gap:8px;align-items:flex-start;}
+.hint-line+.hint-line{margin-top:6px;}
+.hint-line .lbl{font-weight:600;flex:none;}
+.hint-line .txt{flex:1;word-break:break-word;}
+.hint-line .acts{flex:none;display:flex;gap:2px;}
+.hint-line .acts .icon-btn{font-size:12px;opacity:.45;padding:1px 4px;}
+
+.checkin-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#eef2ff;border-radius:10px;padding:10px 14px;margin-bottom:12px;flex-wrap:wrap;}
+.checkin-row .sug{font-size:13px;color:#3730a3;}
+.checkin-row .sug b{font-size:16px;}
+
+.subtasks{border-top:1px dashed var(--line);padding-top:12px;}
+.subtasks h4{margin:0 0 10px;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:1px;}
+.subtask{background:#f8fafc;border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+.st-head{display:flex;align-items:center;gap:8px;font-size:13.5px;flex-wrap:wrap;}
+.st-name{flex:1;font-weight:500;min-width:120px;}
+.st-prog{font-size:12px;color:var(--muted);white-space:nowrap;}
+.st-bar{height:5px;background:#e8edf5;border-radius:99px;overflow:hidden;margin-top:8px;}
+.st-meta{font-size:11.5px;color:var(--muted);margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;}
+.st-hint{font-size:12px;color:#92400e;background:#fef3c7;border-radius:6px;padding:6px 9px;margin-top:8px;}
+.st-hint .r{display:flex;gap:6px;align-items:flex-start;}
+.st-hint .r+.r{margin-top:4px;}
+.st-hint .acts{margin-left:auto;display:flex;gap:2px;flex:none;}
+.st-hint .acts .icon-btn{font-size:11px;opacity:.5;padding:0 3px;}
+
+/* ================= 看板 ================= */
+.kanban-switch{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start;}
+@media(max-width:820px){.kanban-board{grid-template-columns:1fr;}}
+.kanban-col{background:#eef1f7;border-radius:14px;padding:12px;min-height:160px;}
+.kcol-head{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;margin-bottom:10px;padding:0 4px;}
+.kcol-count{background:#fff;border-radius:99px;padding:0 9px;font-size:11.5px;font-weight:600;color:#64748b;}
+.kcol-body{display:flex;flex-direction:column;gap:10px;}
+.kcard{background:#fff;border-radius:12px;padding:12px 13px;box-shadow:0 1px 3px rgba(15,23,42,.08);cursor:pointer;transition:.15s;border-left:3px solid var(--c);}
+.kcard:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(15,23,42,.12);}
+.kc-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+.kc-title{font-size:13.5px;font-weight:600;line-height:1.45;margin-bottom:8px;word-break:break-word;}
+.kc-bar{height:5px;background:#eef1f7;border-radius:99px;overflow:hidden;margin-bottom:6px;}
+.kc-meta{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;color:#64748b;flex-wrap:wrap;}
+.kc-empty{padding:20px 10px;text-align:center;color:#94a3b8;font-size:12.5px;}
+.kc-done-mark{font-size:11.5px;color:#047857;font-weight:600;}
+
+/* ================= 每日复盘 ================= */
+.date-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.date-row input[type=date]{width:auto;min-width:170px;}
+.quick-dates{display:flex;gap:6px;flex-wrap:wrap;}
+.qd{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:4px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;color:#64748b;font-weight:500;transition:.15s;}
+.qd:hover{border-color:#c7d2fe;}
+.qd.active{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(79,70,229,.24);}
+.qd.has{color:#047857;border-color:#a7f3d0;background:#f0fdf4;}
+.qd.has.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+
+.dr-form-head{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px;}
+.dr-form-head h3{margin:0;font-size:15px;font-weight:600;}
+
+.dr-section{padding:16px 0;border-top:1px solid #f1f5f9;}
+.dr-section:first-of-type{border-top:none;padding-top:0;}
+.dr-title{font-size:14.5px;font-weight:700;color:#312e81;margin-bottom:6px;}
+.dr-hints{display:flex;flex-direction:column;gap:2px;margin-bottom:10px;}
+.dr-hints span{font-size:12.5px;color:#94a3b8;padding-left:14px;position:relative;line-height:1.6;}
+.dr-hints span::before{content:'·';position:absolute;left:4px;color:#c7d2fe;font-weight:700;}
+.dr-textarea{min-height:82px;}
+
+/* 历史复盘 */
+.dr-hist{background:#fff;border-radius:14px;padding:14px 18px;margin-bottom:12px;box-shadow:0 1px 4px rgba(15,23,42,.07);}
+.dr-hist-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.dr-hist-date{font-weight:700;font-size:14px;color:#1e293b;}
+.dr-hist-weekday{font-size:12.5px;color:#64748b;}
+.dr-hist-head .acts{margin-left:auto;display:flex;gap:2px;}
+.dr-hist-body{padding-top:12px;margin-top:8px;border-top:1px dashed var(--line);}
+.dr-hist-sec{margin-bottom:10px;}
+.dr-hist-sec:last-child{margin-bottom:0;}
+.dr-hist-sec .t{font-size:12.5px;font-weight:700;color:#7c3aed;margin-bottom:3px;}
+.dr-hist-sec .c{font-size:13.5px;color:#334155;white-space:pre-wrap;word-break:break-word;}
+
+/* ================= 本周复盘 ================= */
+.week-nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;background:#fff;padding:14px 18px;border-radius:14px;box-shadow:0 1px 4px rgba(15,23,42,.07);}
+.week-nav .wn-range{font-weight:700;font-size:15px;flex:1;min-width:200px;}
+.week-nav .wn-sub{font-size:12px;color:#64748b;font-weight:400;display:block;margin-top:1px;}
+
+.wr-section{padding:16px 0;border-top:1px solid #f1f5f9;}
+.wr-section:first-of-type{border-top:none;padding-top:0;}
+.wr-title{font-size:14.5px;font-weight:700;color:#312e81;margin-bottom:6px;}
+.wr-hints{display:flex;flex-direction:column;gap:2px;margin-bottom:10px;}
+.wr-hints span{font-size:12.5px;color:#94a3b8;padding-left:14px;position:relative;line-height:1.6;}
+.wr-hints span::before{content:'·';position:absolute;left:4px;color:#c7d2fe;font-weight:700;}
+
+/* ================= 记录列表 ================= */
+.log-item{background:#f8fafc;border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+.li-head{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:5px;flex-wrap:wrap;}
+.li-date{font-weight:600;color:#475569;}
+.chip{background:#eef2ff;color:#4338ca;border-radius:99px;padding:1px 9px;font-size:11.5px;}
+.li-text{font-size:13.5px;white-space:pre-wrap;word-break:break-word;}
+.li-action{font-size:13px;color:#065f46;background:#ecfdf5;border-radius:8px;padding:7px 10px;margin-top:7px;white-space:pre-wrap;word-break:break-word;}
+.li-head .icon-btn{margin-left:auto;}
+
+/* ================= 打卡弹窗 ================= */
+.ck-list{display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow-y:auto;padding-right:2px;}
+.ck-row{display:flex;align-items:center;gap:10px;background:#f8fafc;border-radius:12px;padding:12px 14px;flex-wrap:wrap;}
+.ck-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+.ck-info{flex:1;min-width:160px;}
+.ck-name{font-size:13.5px;font-weight:600;line-height:1.45;margin-bottom:3px;}
+.ck-parent{color:#64748b;font-weight:400;font-size:12.5px;}
+.ck-meta{font-size:12px;color:#64748b;}
+.ck-meta b{color:#1e293b;}
+.ck-input{width:82px;padding:7px 9px;font-size:13px;text-align:center;flex:none;}
+@media(max-width:520px){.ck-input{width:70px;}}
+
+/* ================= 我的 ================= */
+.mine-hero{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border-radius:18px;padding:26px 24px;margin-bottom:18px;}
+.mine-hero h2{margin:0 0 6px;font-size:20px;}
+.mine-hero p{margin:0;opacity:.9;font-size:13.5px;line-height:1.7;}
+
+.guide{background:#fff;border-radius:16px;padding:20px 22px;margin-bottom:14px;box-shadow:0 1px 4px rgba(15,23,42,.07);}
+.guide h3{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:8px;}
+.guide .lead{font-size:12.5px;color:var(--muted);margin-bottom:12px;}
+.step{display:flex;gap:12px;padding:10px 0;border-top:1px solid #f1f5f9;}
+.step:first-of-type{border-top:none;}
+.step .n{flex:none;width:22px;height:22px;border-radius:50%;background:#eef2ff;color:var(--primary);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.step .c{flex:1;font-size:13.5px;line-height:1.7;}
+.step .c b{color:#312e81;}
+.tip{background:#f8fafc;border-left:3px solid var(--primary);border-radius:8px;padding:10px 14px;font-size:13px;color:#475569;margin-top:10px;line-height:1.7;}
+
+.dm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.dm-card{background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;}
+.dm-card .dm-icon{font-size:24px;}
+.dm-card .dm-title{font-weight:600;font-size:14px;}
+.dm-card .dm-desc{font-size:12.5px;color:var(--muted);line-height:1.65;flex:1;}
+.dm-card .dm-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+
+.import-file{display:none;}
+
+/* ================= 弹窗 ================= */
+#modalRoot{display:none;}
+#modalRoot.open{display:block;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;}
+.modal{background:#fff;border-radius:18px;padding:22px 22px 18px;width:100%;max-width:560px;box-shadow:0 20px 50px rgba(15,23,42,.3);margin:auto;animation:pop .18s ease;}
+.modal.wide{max-width:660px;}
+@keyframes pop{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:none;}}
+.modal h3{margin:0 0 6px;font-size:16px;}
+.modal .sub{font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.6;}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ================= 左侧竖排导航 ================= -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-icon">🎯</span>
+      <span class="brand-text">工作 · 学习 · 生活 管理台</span>
+    </div>
+
+    <nav class="nav" id="nav">
+      <button class="nav-item active" data-tab="goals">
+        <span class="ni-icon">🎯</span><span class="ni-text">目标</span>
+      </button>
+      <button class="nav-item" data-tab="reviews">
+        <span class="ni-icon">📝</span><span class="ni-text">每日复盘</span>
+      </button>
+      <button class="nav-item" data-tab="kanban">
+        <span class="ni-icon">📊</span><span class="ni-text">看板</span>
+      </button>
+      <button class="nav-item" data-tab="weekly">
+        <span class="ni-icon">📈</span><span class="ni-text">本周复盘</span>
+      </button>
+      <button class="nav-item" data-tab="mine">
+        <span class="ni-icon">👤</span><span class="ni-text">我的</span>
+      </button>
+    </nav>
+
+    <button class="sidebar-toggle" id="sidebarToggle" title="收起 / 展开侧栏">
+      <span class="ni-icon">⇤</span><span class="ni-text">收起侧栏</span>
+    </button>
+  </aside>
+
+  <button class="mobile-toggle" id="mobileToggle" title="打开菜单">☰</button>
+
+  <!-- ================= 主内容 ================= -->
+  <main class="main">
+    <div class="main-inner">
+
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">🎯 目标</h1>
+          <div class="sub" id="todayLabel"></div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn primary" id="btnNewGoal">＋ 新建目标</button>
+          <button class="btn primary" id="btnCheckin" style="display:none;">📅 打卡</button>
+        </div>
+      </header>
+
+      <!-- ========== 目标 ========== -->
+      <section class="tab-panel active" id="panel-goals">
+        <div class="filter-bar" id="filterBar"></div>
+        <div id="goalList"></div>
+
+        <div class="panel-card" style="margin-top:22px;">
+          <h3>🚧 制订目标或任务后，出现新障碍 / 困难 及时记录</h3>
+          <div class="sub" style="font-size:12.5px;color:var(--muted);margin:-8px 0 14px;">
+            计划赶不上变化很正常。一旦执行中冒出新障碍、新困难，立刻写下来。写完顺手补一句“我打算怎么解决”。
+          </div>
+          <div class="row">
+            <div class="field"><label>日期</label><input type="date" id="br-date"></div>
+            <div class="field"><label>关联目标 / 任务（建议选择）</label><select id="br-goal"></select></div>
+          </div>
+          <div class="field"><label>出现了什么新的障碍 / 困难？</label>
+            <textarea id="br-text" placeholder="例：温循老化装备的曲线参数供应商迟迟不提供，项目卡在验证环节"></textarea></div>
+          <div class="field"><label>我打算怎么解决？</label>
+            <textarea id="br-action" placeholder="例：先用上一代设备的参数做替代验证，同时把问题升级到采购负责人，约定本周五前给答复"></textarea></div>
+          <button class="btn primary" id="br-save">记录下来</button>
+        </div>
+
+        <div class="panel-card">
+          <h3>历史障碍记录</h3>
+          <div id="barrierList"></div>
+        </div>
+      </section>
+
+      <!-- ========== 每日复盘 ========== -->
+      <section class="tab-panel" id="panel-reviews">
+        <!-- 复盘提醒（仅在此页签显示） -->
+        <div id="bannerWrap"></div>
+
+        <!-- 每日复盘表单 -->
+        <div class="panel-card">
+          <div class="dr-form-head">
+            <h3>📝 每日复盘</h3>
+            <div class="date-row">
+              <input type="date" id="rv-date">
+              <div class="quick-dates" id="quickDates"></div>
+            </div>
+          </div>
+
+          <div class="dr-section">
+            <div class="dr-title">一、今日成就</div>
+            <div class="dr-hints">
+              <span>今天做了些什么</span>
+              <span>做这些事情分别花了多久</span>
+            </div>
+            <textarea id="dr-achievement" class="dr-textarea" placeholder="记录今天完成的事，以及每项花费的时间"></textarea>
+          </div>
+
+          <div class="dr-section">
+            <div class="dr-title">二、今日反思</div>
+            <div class="dr-hints">
+              <span>今天做了哪些不该做的事情</span>
+              <span>今天有哪些该做的事情没做</span>
+              <span>今天遇到了什么问题，问题根本是</span>
+              <span>今天在时间分配上，有什么可改进</span>
+            </div>
+            <textarea id="dr-reflection" class="dr-textarea" placeholder="诚实面对今天没做好的地方，找到根本原因"></textarea>
+          </div>
+
+          <div class="dr-section">
+            <div class="dr-title">三、今日收获</div>
+            <div class="dr-hints">
+              <span>今天有哪些收获</span>
+              <span>今天有哪些感受或者启发</span>
+            </div>
+            <textarea id="dr-gain" class="dr-textarea" placeholder="今天学到的、感受到的、被启发的"></textarea>
+          </div>
+
+          <div class="dr-section">
+            <div class="dr-title">四、今日美好</div>
+            <div class="dr-hints">
+              <span>今天遇到了什么美好的事情</span>
+            </div>
+            <textarea id="dr-beauty" class="dr-textarea" placeholder="哪怕很小，一件让你觉得美好的事"></textarea>
+          </div>
+
+          <div class="dr-section">
+            <div class="dr-title">五、今日感恩</div>
+            <div class="dr-hints">
+              <span>心怀感恩，会越来越幸运和富足</span>
+            </div>
+            <textarea id="dr-gratitude" class="dr-textarea" placeholder="今天想感谢的人或事"></textarea>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;">
+            <button class="btn primary" id="dr-save">保存复盘</button>
+            <span class="muted tiny" id="dr-mode"></span>
+          </div>
+        </div>
+
+        <!-- 历史复盘 -->
+        <div class="panel-card">
+          <h3>历史复盘</h3>
+          <div id="reviewList"></div>
+        </div>
+      </section>
+
+      <!-- ========== 看板 ========== -->
+      <section class="tab-panel" id="panel-kanban">
+        <div class="kanban-switch">
+          <span style="font-size:13px;color:#64748b;font-weight:600;">展示：</span>
+          <button class="fchip active" data-kview="goal" style="--fc:#4f46e5">🎯 目标看板</button>
+          <button class="fchip" data-kview="sub" style="--fc:#0ea5e9">📌 子任务看板</button>
+        </div>
+        <div class="filter-bar" id="kanbanFilterBar"></div>
+        <div class="kanban-board" id="kanbanBoard"></div>
+      </section>
+
+      <!-- ========== 本周复盘 ========== -->
+      <section class="tab-panel" id="panel-weekly">
+        <div class="week-nav">
+          <button class="btn ghost sm" id="weekPrev">← 上一周</button>
+          <div class="wn-range">
+            <span id="weekRange">—</span>
+            <span class="wn-sub" id="weekSub"></span>
+          </div>
+          <button class="btn ghost sm" id="weekNext">下一周 →</button>
+          <button class="btn ghost sm" id="weekThis">回到本周</button>
+        </div>
+
+        <div class="panel-card">
+          <div class="wr-section">
+            <div class="wr-title">一、汇总本周事件</div>
+            <div class="wr-hints">
+              <span>这周发生了什么，完成了什么计划</span>
+              <span>这周有什么收获，取得什么结果</span>
+              <span>这周遇到了什么问题，进展怎样</span>
+              <span>这周见了什么重要的人，谈了什么</span>
+            </div>
+            <textarea id="wr-events" placeholder="把这一周的重要事件梳理一遍"></textarea>
+          </div>
+
+          <div class="wr-section">
+            <div class="wr-title">二、计划完成情况</div>
+            <div class="wr-hints">
+              <span>工作交付了什么，任务还有什么没完成</span>
+              <span>这一周生活状态怎样，家庭氛围怎样</span>
+              <span>这周看了什么书，学到了什么</span>
+            </div>
+            <textarea id="wr-plan" placeholder="对照计划，逐项检查完成情况"></textarea>
+          </div>
+
+          <div class="wr-section">
+            <div class="wr-title">三、本周反思</div>
+            <div class="wr-hints">
+              <span>完成的任务有没有更好的完成方式</span>
+              <span>没完成的任务问题出在哪，怎么解决</span>
+            </div>
+            <textarea id="wr-reflection" placeholder="诚实面对，找到可改进的地方"></textarea>
+          </div>
+
+          <div class="wr-section">
+            <div class="wr-title">四、复盘收获</div>
+            <div class="wr-hints">
+              <span>发现什么问题，总结出什么经验</span>
+            </div>
+            <textarea id="wr-gain" placeholder="这一周最重要的经验教训"></textarea>
+          </div>
+
+          <div class="wr-section">
+            <div class="wr-title">五、下周计划</div>
+            <div class="wr-hints">
+              <span>合理规划时间，考虑生活工作平衡</span>
+            </div>
+            <textarea id="wr-nextplan" placeholder="下周最重要的三件事，以及时间安排"></textarea>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;">
+            <button class="btn primary" id="wr-save">保存本周复盘</button>
+            <span class="muted tiny" id="wr-mode"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 我的 ========== -->
+      <section class="tab-panel" id="panel-mine">
+        <div class="mine-hero">
+          <h2>👤 我的 · 使用说明</h2>
+          <p>这个工作台只管一件事：把「有明确终点的目标」拆成今天能动手的量，并且让你每天都比昨天更会做事。</p>
+        </div>
+
+        <!-- 数据管理 -->
+        <div class="guide">
+          <h3>💾 数据管理</h3>
+          <div class="lead">所有数据都存在你自己的浏览器里，不联网、不上传。可以随时备份、恢复或清空。</div>
+
+          <div class="dm-grid">
+            <div class="dm-card">
+              <div class="dm-icon">📤</div>
+              <div class="dm-title">导出 JSON 备份</div>
+              <div class="dm-desc">把目标、子任务、打卡记录、障碍记录、每日复盘、本周复盘全部导出为一个 JSON 文件，方便存档或换设备。</div>
+              <div class="dm-actions">
+                <button class="btn primary sm" id="btnExport">导出备份</button>
+              </div>
+            </div>
+
+            <div class="dm-card">
+              <div class="dm-icon">📥</div>
+              <div class="dm-title">导入 JSON 恢复</div>
+              <div class="dm-desc">从之前导出的 JSON 文件恢复全部数据。<b>导入会覆盖当前所有数据</b>，建议先导出当前备份。</div>
+              <div class="dm-actions">
+                <button class="btn ghost sm" id="btnImport">选择文件导入</button>
+                <input type="file" accept=".json,application/json" class="import-file" id="importFile">
+              </div>
+            </div>
+
+            <div class="dm-card">
+              <div class="dm-icon">🗑️</div>
+              <div class="dm-title">清空全部数据</div>
+              <div class="dm-desc">删除本机保存的所有目标、复盘、障碍与打卡记录。此操作不可撤销，请先导出备份。</div>
+              <div class="dm-actions">
+                <button class="btn danger sm" id="btnClearAll">清空全部数据</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide">
+          <h3>🎯 目标：把大目标拆成今天能干的量</h3>
+          <div class="lead">适用于“在年底完成 FFM 温循老化装备导入制造”“读完各子系统设计文档”这类有终点的目标，不是喝水打卡。</div>
+          <div class="step"><div class="n">1</div><div class="c"><b>新建目标</b>：在「目标」页签点右上角「＋ 新建目标」，填名称、分类、单位、总量、起止日期和配色。</div></div>
+          <div class="step"><div class="n">2</div><div class="c"><b>分类筛选</b>：目标分为工作达成、学习提升、人际交往、身体健康、小孩教育、父母关怀、夫妻关系等。目标页顶部点分类标签就能只看这一类。</div></div>
+          <div class="step"><div class="n">3</div><div class="c"><b>写障碍与对策</b>：每个目标和子任务都能填「达成目标或任务，我将会遇到哪些可能的障碍/困难？」和「如果遇到，你该如何解决」。填完可以在卡片上直接改或删。</div></div>
+          <div class="step"><div class="n">4</div><div class="c"><b>拆子任务</b>：大目标下面点「＋ 添加子任务」，把“读完设计文档”拆成“读完温控子系统文档”这种一次能完成的动作。打卡记在子任务上，进度自动汇总到目标。</div></div>
+          <div class="step"><div class="n">5</div><div class="c"><b>每日打卡</b>：系统自动算出<b>今日建议量 = 剩余量 ÷ 剩余天数</b>，打卡框里已经预填好，你可以改成实际完成的量。</div></div>
+          <div class="step"><div class="n">6</div><div class="c"><b>看三个数字</b>：完成率、连续打卡天数、预计完成日。预计完成日按近 7 天平均速度推算，并和截止日比较，显示“提前 N 天”或“拖后 N 天”；样本不足 2 天时显示“暂无推算”，不编数字。</div></div>
+          <div class="step"><div class="n">7</div><div class="c"><b>执行中冒出新障碍立刻记</b>：目标页最下面是「🚧 制订目标或任务后，出现新障碍 / 困难 及时记录」。写清楚卡在哪、打算怎么办，并选择关联到对应的目标或任务。</div></div>
+          <div class="tip">💡 目标总量要能数得清，比如“20 个子系统文档”“8 台设备”。数不清的量，就算不出今日建议量。</div>
+        </div>
+
+        <div class="guide">
+          <h3>📝 每日复盘：五问模板，每天一次</h3>
+          <div class="lead">每天收工前花 5～10 分钟，按模板如实写。写完之后点「保存复盘」即可。</div>
+          <div class="step"><div class="n">一</div><div class="c"><b>今日成就</b>：今天做了些什么，做这些事情分别花了多久。记录事实，不评价。</div></div>
+          <div class="step"><div class="n">二</div><div class="c"><b>今日反思</b>：今天做了哪些不该做的事情，有哪些该做的事情没做，遇到了什么问题、问题根本是什么，时间分配上有什么可改进。</div></div>
+          <div class="step"><div class="n">三</div><div class="c"><b>今日收获</b>：今天有哪些收获，有哪些感受或者启发。</div></div>
+          <div class="step"><div class="n">四</div><div class="c"><b>今日美好</b>：今天遇到了什么美好的事情，哪怕很小。</div></div>
+          <div class="step"><div class="n">五</div><div class="c"><b>今日感恩</b>：心怀感恩，会越来越幸运和富足。</div></div>
+          <div class="step"><div class="n">⏰</div><div class="c"><b>补录最近 7 天</b>：日期旁边的胶囊按钮可以切换到今天、昨天、2 天前……一直到 6 天前。带 ✓ 的表示那天已经写过了。</div></div>
+          <div class="step"><div class="n">📅</div><div class="c"><b>打卡按钮</b>：每日复盘页签右上角的「📅 打卡」按钮，一键打卡今天所有还有剩余量的目标 / 子任务，不用来回切换页签。</div></div>
+          <div class="step"><div class="n">🗑</div><div class="c"><b>可编辑可删除</b>：历史复盘里随时可以点 ✏️ 修改或点 🗑️ 删除。</div></div>
+          <div class="tip">💡 顶部提醒只出现在「每日复盘」页签，提醒你今天还没复盘。看到就去写，别拖到第二天。</div>
+        </div>
+
+        <div class="guide">
+          <h3>📊 看板：一眼看清哪些目标卡住了</h3>
+          <div class="lead">看板把目标和子任务按「未开始 / 进行中 / 已完成」三列摊开，进度一眼可辨。</div>
+          <div class="step"><div class="n">·</div><div class="c"><b>目标看板</b>：每张卡片是一个目标，显示分类、完成率、截止日、今日建议量。</div></div>
+          <div class="step"><div class="n">·</div><div class="c"><b>子任务看板</b>：切换后每张卡片是一个子任务，方便聚焦到具体动作上。</div></div>
+          <div class="step"><div class="n">·</div><div class="c"><b>点卡片跳转</b>：点击卡片会跳到「目标」页签并高亮对应目标，方便快速修改。</div></div>
+          <div class="tip">💡 每周看一眼看板：如果「进行中」一列长期不动，说明卡点需要处理了。</div>
+        </div>
+
+        <div class="guide">
+          <h3>📈 本周复盘：五问模板，一周一次</h3>
+          <div class="lead">以自然周（周一到周日）为单位，用五个问题回看这一周。</div>
+          <div class="step"><div class="n">一</div><div class="c"><b>汇总本周事件</b>：这周发生了什么、完成了什么计划、有什么收获和结果、遇到了什么问题、见了什么重要的人。</div></div>
+          <div class="step"><div class="n">二</div><div class="c"><b>计划完成情况</b>：工作交付了什么、任务还有什么没完成、这一周生活状态和家庭氛围怎样、看了什么书学到了什么。</div></div>
+          <div class="step"><div class="n">三</div><div class="c"><b>本周反思</b>：完成的任务有没有更好的完成方式，没完成的任务问题出在哪、怎么解决。</div></div>
+          <div class="step"><div class="n">四</div><div class="c"><b>复盘收获</b>：发现什么问题，总结出什么经验。</div></div>
+          <div class="step"><div class="n">五</div><div class="c"><b>下周计划</b>：合理规划时间，考虑生活工作平衡。</div></div>
+          <div class="step"><div class="n">·</div><div class="c"><b>翻周</b>：左上角可切换到任意一周，「回到本周」一键回来。每周复盘按周单独保存。</div></div>
+          <div class="tip">💡 推荐每周日晚上花 15 分钟写本周复盘：本周完成量、本周障碍、下周调整方向，三个问题想清楚就够了。</div>
+        </div>
+
+        <div class="guide">
+          <h3>💾 数据说明</h3>
+          <div class="step"><div class="n">·</div><div class="c">所有数据只保存在<b>你自己的浏览器</b>里（localStorage），不联网、不上传、不需要账号。</div></div>
+          <div class="step"><div class="n">·</div><div class="c">换电脑、换浏览器、清理浏览器数据都会导致内容丢失。重要内容请定期使用「导出 JSON 备份」。</div></div>
+          <div class="step"><div class="n">·</div><div class="c">把网页另存为文件保存在本地，双击就能打开使用。</div></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div id="modalRoot"></div>
+
+<script>
+/* =========================================================
+   基础工具
+   ========================================================= */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDate(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function todayStr(){ return fmtDate(new Date()); }
+function parseDate(s){ const [y,m,d] = String(s).split('-').map(Number); return new Date(y, m-1, d); }
+function daysBetween(a,b){ return Math.round((parseDate(b)-parseDate(a))/86400000); }
+function addDays(s,n){ const d = parseDate(s); d.setDate(d.getDate()+n); return fmtDate(d); }
+function isValidDate(s){ return /^\d{4}-\d{2}-\d{2}$/.test(String(s||'')); }
+function round2(n){ return Math.round((Number(n)+Number.EPSILON)*100)/100; }
+function fmtNum(n){ const r = round2(Number(n)||0); return Number.isInteger(r) ? String(r) : String(r); }
+function fmtCN(s){
+  if(!isValidDate(s)) return s || '—';
+  const d = parseDate(s);
+  return `${d.getMonth()+1}月${d.getDate()}日`;
+}
+function fmtCNFull(s){
+  if(!isValidDate(s)) return s || '—';
+  const d = parseDate(s);
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+function weekdayCN(s){
+  const d = parseDate(s);
+  return '星期' + ['日','一','二','三','四','五','六'][d.getDay()];
+}
+function getMonday(dateStr){
+  const d = parseDate(dateStr);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  d.setDate(d.getDate() - diff);
+  return fmtDate(d);
+}
+
+/* =========================================================
+   常量
+   ========================================================= */
+const CATS = [
+  { id:'work',    name:'工作达成', color:'#4f46e5', icon:'💼' },
+  { id:'study',   name:'学习提升', color:'#0ea5e9', icon:'📚' },
+  { id:'social',  name:'人际交往', color:'#8b5cf6', icon:'🤝' },
+  { id:'health',  name:'身体健康', color:'#10b981', icon:'💪' },
+  { id:'child',   name:'小孩教育', color:'#f59e0b', icon:'🧒' },
+  { id:'parents', name:'父母关怀', color:'#ec4899', icon:'🌸' },
+  { id:'couple',  name:'夫妻关系', color:'#f43f5e', icon:'❤️' },
+  { id:'other',   name:'其他',     color:'#64748b', icon:'📌' },
+];
+const CAT_MAP = Object.fromEntries(CATS.map(c => [c.id, c]));
+const PALETTE = ['#4f46e5','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1'];
+const QUICK_DAYS = 7;
+
+const PAGE_TITLES = {
+  goals:   '🎯 目标',
+  reviews: '📝 每日复盘',
+  kanban:  '📊 看板',
+  weekly:  '📈 本周复盘',
+  mine:    '👤 我的',
+};
+
+/* =========================================================
+   数据层
+   ========================================================= */
+const KEY = 'wsl_manager_v6';
+const SIDEBAR_KEY = 'wsl_sidebar_collapsed';
+let state = loadState();
+let catFilter = 'all';
+let kanbanView = 'goal';
+let kanbanCat = 'all';
+let weekOffset = 0;
+
+function blankDailyReview(dateStr){
+  return {
+    id: uid(),
+    date: dateStr || todayStr(),
+    achievement: '',
+    reflection: '',
+    gain: '',
+    beauty: '',
+    gratitude: '',
+    ts: Date.now(),
+  };
+}
+
+function normalizeState(s){
+  s = s || {};
+  s.goals    = Array.isArray(s.goals) ? s.goals : [];
+  s.barriers = Array.isArray(s.barriers) ? s.barriers : [];
+  s.reviews  = Array.isArray(s.reviews) ? s.reviews : [];
+  s.weeklyReviews = (s.weeklyReviews && typeof s.weeklyReviews === 'object' && !Array.isArray(s.weeklyReviews))
+    ? s.weeklyReviews : {};
+
+  s.goals.forEach(g => {
+    g.logs = Array.isArray(g.logs) ? g.logs : [];
+    g.subtasks = Array.isArray(g.subtasks) ? g.subtasks : [];
+    g.subtasks.forEach(st => { st.logs = Array.isArray(st.logs) ? st.logs : []; });
+    if(!g.category || !CAT_MAP[g.category]) g.category = 'other';
+  });
+
+  // 复盘：兼容旧结构 → 新五问结构
+  s.reviews.forEach(rv => {
+    if(Array.isArray(rv.items)){
+      const texts = rv.items.map(it => {
+        const parts = [];
+        if(it.what) parts.push(it.what);
+        if(it.why)  parts.push('反思：' + it.why);
+        if(it.how)  parts.push('改进：' + it.how);
+        return parts.join('\n');
+      });
+      rv.achievement = texts.join('\n\n');
+      rv.reflection  = '';
+      rv.gain        = '';
+      rv.beauty      = '';
+      rv.gratitude   = '';
+      delete rv.items;
+    }
+    rv.achievement = rv.achievement || '';
+    rv.reflection  = rv.reflection  || '';
+    rv.gain        = rv.gain        || '';
+    rv.beauty      = rv.beauty      || '';
+    rv.gratitude   = rv.gratitude   || '';
+    rv.ts = rv.ts || Date.now();
+  });
+
+  return s;
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) return normalizeState(JSON.parse(raw));
+  }catch(e){ console.warn('读取本地数据失败', e); }
+  return normalizeState({});
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ console.warn('保存失败', e); }
+}
+
+/* =========================================================
+   计算逻辑
+   ========================================================= */
+function subProgress(st){ return (st.logs || []).reduce((a,l) => a + (Number(l.amount)||0), 0); }
+function selfLogs(g){ return (g.logs || []).reduce((a,l) => a + (Number(l.amount)||0), 0); }
+function goalProgress(g){
+  return selfLogs(g) + (g.subtasks || []).reduce((a,st) => a + subProgress(st), 0);
+}
+function allLogsOf(g){
+  const arr = [...(g.logs || [])];
+  (g.subtasks || []).forEach(st => (st.logs || []).forEach(l => arr.push(l)));
+  return arr;
+}
+function suggest(total, prog, end){
+  const remaining = Math.max(0, total - prog);
+  if(remaining <= 0) return 0;
+  if(!isValidDate(end)) return remaining;
+  const d = daysBetween(todayStr(), end);
+  const daysLeft = d >= 0 ? d + 1 : 1;
+  return remaining / daysLeft;
+}
+function streak(g){
+  const set = new Set();
+  (g.logs || []).forEach(l => set.add(l.date));
+  (g.subtasks || []).forEach(st => (st.logs || []).forEach(l => set.add(l.date)));
+  if(set.size === 0) return 0;
+  const today = todayStr();
+  let cur = set.has(today) ? today : addDays(today, -1);
+  let n = 0;
+  while(set.has(cur)){ n++; cur = addDays(cur, -1); }
+  return n;
+}
+function forecast(logs, remaining){
+  if(remaining <= 0) return { done: true };
+  const today = todayStr();
+  const from = addDays(today, -6);
+  const recent = logs.filter(l => isValidDate(l.date) && l.date >= from && l.date <= today);
+  const activeDays = new Set(recent.map(l => l.date)).size;
+  if(activeDays < 2) return { insufficient: true };
+  const amt = recent.reduce((a,l) => a + (Number(l.amount)||0), 0);
+  const speed = amt / 7;
+  if(!(speed > 0)) return { insufficient: true };
+  const need = Math.ceil(remaining / speed);
+  return { date: addDays(today, need), speed };
+}
+function goalStatus(g){
+  const prog = goalProgress(g);
+  const total = Number(g.total) || 0;
+  if(total <= 0) return 'todo';
+  if(prog >= total) return 'done';
+  if(prog <= 0) return 'todo';
+  return 'doing';
+}
+function subStatus(g, st){
+  const prog = subProgress(st);
+  const total = Number(st.total) || 0;
+  if(total <= 0) return 'todo';
+  if(prog >= total) return 'done';
+  if(prog <= 0) return 'todo';
+  return 'doing';
+}
+function hasReviewOn(dateStr){
+  return state.reviews.some(rv => rv.date === dateStr);
+}
+function findDailyReview(dateStr){
+  return state.reviews.find(rv => rv.date === dateStr) || null;
+}
+function missingRecentDays(){
+  let n = 0;
+  for(let i = 1; i < QUICK_DAYS; i++){
+    if(!hasReviewOn(addDays(todayStr(), -i))) n++;
+  }
+  return n;
+}
+
+/* =========================================================
+   渲染总入口
+   ========================================================= */
+function render(){
+  renderBanner();
+  renderFilterBar();
+  renderGoals();
+  renderBarrierList();
+  renderGoalOptions();
+  renderKanban();
+  renderDailyReviewList();
+  renderWeeklyPanel();
+}
+
+/* -------- 复盘提醒（仅在每日复盘页签） -------- */
+function renderBanner(){
+  const wrap = $('#bannerWrap');
+  if(!wrap) return;
+  const msgs = [];
+  const today = todayStr();
+  if(!hasReviewOn(today)){
+    msgs.push(`<div class="banner warm">📝 今天还没写每日复盘。收工前花 5 分钟，按五问模板写一写。</div>`);
+  }else{
+    const miss = missingRecentDays();
+    if(miss > 0){
+      msgs.push(`<div class="banner warm">🕐 最近 7 天里还有 <b>${miss}</b> 天没写复盘，可以在下方切换日期补录。</div>`);
+    }
+  }
+  wrap.innerHTML = msgs.join('');
+}
+
+/* -------- 目标分类筛选 -------- */
+function renderFilterBar(){
+  const bar = $('#filterBar');
+  if(!bar) return;
+  const counts = {};
+  state.goals.forEach(g => { counts[g.category] = (counts[g.category] || 0) + 1; });
+  const total = state.goals.length;
+  let html = `<button class="fchip ${catFilter==='all'?'active':''}" data-cat="all" style="--fc:#4f46e5">全部 <span class="cnt">${total}</span></button>`;
+  CATS.forEach(c => {
+    const n = counts[c.id] || 0;
+    if(n === 0 && catFilter !== c.id) return;
+    html += `<button class="fchip ${catFilter===c.id?'active':''}" data-cat="${c.id}" style="--fc:${c.color}">${c.icon} ${c.name} <span class="cnt">${n}</span></button>`;
+  });
+  bar.innerHTML = html;
+}
+
+/* -------- 目标列表 -------- */
+function renderGoals(){
+  const wrap = $('#goalList');
+  if(!wrap) return;
+  let list = state.goals;
+  if(catFilter !== 'all') list = list.filter(g => g.category === catFilter);
+
+  if(!state.goals.length){
+    wrap.innerHTML = `<div class="empty">
+      <div style="font-size:32px;margin-bottom:8px;">🎯</div>
+      还没有目标。把「在年底完成 FFM 温循老化装备导入制造」这样的目标加进来吧。<br>
+      <span style="font-size:12.5px;">点右上角「＋ 新建目标」开始</span>
+    </div>`;
+    return;
+  }
+  if(!list.length){
+    wrap.innerHTML = `<div class="empty">这个分类下暂时没有目标。</div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(goalCardHTML).join('');
+}
+
+function goalCardHTML(g){
+  const cat = CAT_MAP[g.category] || CAT_MAP.other;
+  const prog = goalProgress(g);
+  const total = Number(g.total) || 0;
+  const rate = total > 0 ? Math.min(100, prog/total*100) : 0;
+  const remaining = Math.max(0, total - prog);
+  const hasSub = (g.subtasks || []).length > 0;
+  const sug = suggest(total, prog, g.end);
+  const st = streak(g);
+  const fc = forecast(allLogsOf(g), remaining);
+
+  let leftTxt = '—', leftCls = '';
+  if(isValidDate(g.end)){
+    const d = daysBetween(todayStr(), g.end);
+    if(d > 0) leftTxt = `剩余 ${d+1} 天`;
+    else if(d === 0){ leftTxt = '今天截止'; leftCls = 'warn'; }
+    else { leftTxt = `已逾期 ${-d} 天`; leftCls = 'overdue'; }
+  }
+
+  let fcHTML = '';
+  if(fc.done){
+    fcHTML = `<b class="ok">已完成 🎉</b>`;
+  }else if(fc.insufficient){
+    fcHTML = `<b class="muted">暂无推算</b><div class="tiny muted">近 7 天有效打卡不足 2 天</div>`;
+  }else{
+    const diff = isValidDate(g.end) ? daysBetween(fc.date, g.end) : null;
+    let cmp = '';
+    if(diff !== null){
+      if(diff > 0) cmp = `<div class="tiny ok">比截止日提前 ${diff} 天</div>`;
+      else if(diff === 0) cmp = `<div class="tiny ok">正好赶上截止日</div>`;
+      else cmp = `<div class="tiny bad">比截止日拖后 ${-diff} 天</div>`;
+    }
+    fcHTML = `<b>${fmtCN(fc.date)}</b>${cmp}`;
+  }
+
+  const hasHint = g.obstacle || g.ifThen;
+  const hintHTML = hasHint ? `
+    <div class="hint-block">
+      ${g.obstacle ? `<div class="hint-line">
+        <span class="lbl">🚧 可能遇到的障碍/困难：</span>
+        <span class="txt">${esc(g.obstacle)}</span>
+        <span class="acts">
+          <button class="icon-btn" data-act="edit-hint" data-id="${g.id}" title="编辑">✏️</button>
+          <button class="icon-btn" data-act="del-hint" data-id="${g.id}" title="删除">🗑️</button>
+        </span>
+      </div>` : ''}
+      ${g.ifThen ? `<div class="hint-line">
+        <span class="lbl">🛡 如果遇到，我该如何解决：</span>
+        <span class="txt">${esc(g.ifThen)}</span>
+        <span class="acts">
+          <button class="icon-btn" data-act="edit-hint" data-id="${g.id}" title="编辑">✏️</button>
+          <button class="icon-btn" data-act="del-hint" data-id="${g.id}" title="删除">🗑️</button>
+        </span>
+      </div>` : ''}
+    </div>` : '';
+
+  const checkinHTML = hasSub
+    ? `<div class="checkin-row">
+         <div class="sug">今日建议总量 <b>${fmtNum(sug)}</b> ${esc(g.unit||'')}<span class="muted"> · 请到下方子任务打卡</span></div>
+       </div>`
+    : `<div class="checkin-row">
+         <div class="sug">今日建议 <b>${fmtNum(sug)}</b> ${esc(g.unit||'')}<span class="muted">（剩余 ${fmtNum(remaining)} ÷ 剩余天数）</span></div>
+         <button class="btn primary sm" data-act="checkin-goal" data-id="${g.id}">打卡</button>
+       </div>`;
+
+  return `
+  <article class="goal-card" id="goal-${g.id}" style="--c:${esc(g.color || cat.color)}">
+    <div class="gc-head">
+      <span class="dot" style="background:${esc(g.color || cat.color)}"></span>
+      <span class="cat-tag" style="background:${cat.color}1a;color:${cat.color}">${cat.icon} ${cat.name}</span>
+      <h3>${esc(g.name)}</h3>
+      <button class="icon-btn" data-act="edit-goal" data-id="${g.id}" title="编辑目标">✏️</button>
+      <button class="icon-btn" data-act="del-goal" data-id="${g.id}" title="删除目标">🗑️</button>
+    </div>
+
+    <div class="gc-meta">
+      <span>${isValidDate(g.start) ? fmtCNFull(g.start) : '—'} → ${isValidDate(g.end) ? fmtCNFull(g.end) : '—'}</span>
+      <span class="${leftCls}">${leftTxt}</span>
+    </div>
+
+    <div class="progress-row">
+      <div class="bar"><div class="bar-fill" style="width:${rate}%;background:${esc(g.color||cat.color)}"></div></div>
+      <span class="prog-text">${fmtNum(prog)} / ${fmtNum(total)} ${esc(g.unit||'')}（${rate.toFixed(1)}%）</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><label>完成率</label><b>${rate.toFixed(1)}%</b></div>
+      <div class="stat"><label>连续打卡</label><b>${st} 天</b></div>
+      <div class="stat"><label>预计完成日</label>${fcHTML}</div>
+    </div>
+
+    ${hintHTML}
+    ${checkinHTML}
+
+    <div class="subtasks">
+      <h4>子任务 · ${(g.subtasks||[]).length}</h4>
+      ${(g.subtasks||[]).map(st => subTaskHTML(g, st)).join('')}
+      <button class="btn ghost sm" data-act="add-sub" data-id="${g.id}">＋ 添加子任务</button>
+    </div>
+  </article>`;
+}
+
+function subTaskHTML(g, st){
+  const prog = subProgress(st);
+  const total = Number(st.total) || 0;
+  const rate = total > 0 ? Math.min(100, prog/total*100) : 0;
+  const sug = suggest(total, prog, st.end);
+  const color = st.color || g.color || '#4f46e5';
+  let leftTxt = '';
+  if(isValidDate(st.end)){
+    const d = daysBetween(todayStr(), st.end);
+    leftTxt = d > 0 ? `剩余 ${d+1} 天` : (d === 0 ? '今天截止' : `已逾期 ${-d} 天`);
+  }
+  const hasHint = st.obstacle || st.ifThen;
+  return `
+  <div class="subtask">
+    <div class="st-head">
+      <span class="dot" style="width:8px;height:8px;background:${esc(color)}"></span>
+      <span class="st-name">${esc(st.name)}</span>
+      <span class="st-prog">${fmtNum(prog)} / ${fmtNum(total)} ${esc(st.unit||'')}</span>
+      <button class="btn primary sm" data-act="checkin-sub" data-id="${g.id}" data-sub="${st.id}">打卡</button>
+      <button class="icon-btn" data-act="edit-sub" data-id="${g.id}" data-sub="${st.id}" title="编辑子任务">✏️</button>
+      <button class="icon-btn" data-act="del-sub" data-id="${g.id}" data-sub="${st.id}" title="删除子任务">🗑️</button>
+    </div>
+    <div class="st-bar"><div class="bar-fill" style="width:${rate}%;background:${esc(color)}"></div></div>
+    <div class="st-meta">
+      <span>${isValidDate(st.start) ? fmtCN(st.start) : '—'} → ${isValidDate(st.end) ? fmtCN(st.end) : '—'}</span>
+      ${leftTxt ? `<span>${leftTxt}</span>` : ''}
+      <span>今日建议 <b>${fmtNum(sug)}</b> ${esc(st.unit||'')}</span>
+    </div>
+    ${hasHint ? `<div class="st-hint">
+      ${st.obstacle ? `<div class="r"><span>🚧 ${esc(st.obstacle)}</span></div>` : ''}
+      ${st.ifThen ? `<div class="r"><span>🛡 ${esc(st.ifThen)}</span></div>` : ''}
+      <div class="r" style="justify-content:flex-end;">
+        <span class="acts">
+          <button class="icon-btn" data-act="edit-sub-hint" data-id="${g.id}" data-sub="${st.id}" title="编辑">✏️</button>
+          <button class="icon-btn" data-act="del-sub-hint" data-id="${g.id}" data-sub="${st.id}" title="删除">🗑️</button>
+        </span>
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+/* -------- 历史障碍记录 -------- */
+function renderBarrierList(){
+  const wrap = $('#barrierList');
+  if(!wrap) return;
+  const list = [...state.barriers].sort((a,b) => (b.ts||0) - (a.ts||0));
+  if(!list.length){
+    wrap.innerHTML = `<div class="empty">还没有记录。<br><span style="font-size:12.5px;">执行中一旦冒出新障碍，立刻记一笔。</span></div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(b => {
+    const g = state.goals.find(x => x.id === b.goalId);
+    const cat = g ? (CAT_MAP[g.category] || CAT_MAP.other) : null;
+    const goalChip = g
+      ? `<span class="chip" style="background:${cat.color}1a;color:${cat.color}">🎯 关联目标：${esc(g.name)}</span>`
+      : `<span class="chip" style="background:#f1f5f9;color:#94a3b8;">🎯 未关联目标</span>`;
+    return `<div class="log-item">
+      <div class="li-head">
+        <span class="li-date">${esc(b.date)}</span>
+        ${goalChip}
+        <button class="icon-btn" data-act="del-barrier" data-id="${b.id}" title="删除">🗑️</button>
+      </div>
+      <div class="li-text">${esc(b.text)}</div>
+      ${b.action ? `<div class="li-action">→ ${esc(b.action)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+/* -------- 目标下拉 -------- */
+function renderGoalOptions(){
+  const sel = $('#br-goal');
+  if(!sel) return;
+  const sig = state.goals.map(g => g.id + g.name).join('|');
+  if(sel.dataset.sig === sig) return;
+  const cur = sel.value;
+  sel.dataset.sig = sig;
+  sel.innerHTML = '<option value="">— 不关联 —</option>' +
+    state.goals.map(g => {
+      const cat = CAT_MAP[g.category] || CAT_MAP.other;
+      return `<option value="${g.id}">${cat.icon} ${esc(g.name)}</option>`;
+    }).join('');
+  if(cur && state.goals.some(g => g.id === cur)) sel.value = cur;
+}
+
+/* =========================================================
+   看板
+   ========================================================= */
+function renderKanban(){
+  renderKanbanFilter();
+  const board = $('#kanbanBoard');
+  if(!board) return;
+  const columns = [
+    { key:'todo',  name:'📋 未开始' },
+    { key:'doing', name:'🔄 进行中' },
+    { key:'done',  name:'✅ 已完成' },
+  ];
+  let cards = [];
+  if(kanbanView === 'goal'){
+    cards = state.goals.map(g => {
+      const cat = CAT_MAP[g.category] || CAT_MAP.other;
+      const prog = goalProgress(g);
+      const total = Number(g.total) || 0;
+      const rate = total > 0 ? Math.min(100, prog/total*100) : 0;
+      const sug = suggest(total, prog, g.end);
+      return {
+        id: g.id, type: 'goal', status: goalStatus(g), cat: g.category,
+        color: g.color || cat.color, title: g.name,
+        catTag: `${cat.icon} ${cat.name}`,
+        progText: `${fmtNum(prog)} / ${fmtNum(total)} ${esc(g.unit||'')}`,
+        rate, end: g.end, sug,
+      };
+    });
+  }else{
+    state.goals.forEach(g => {
+      (g.subtasks || []).forEach(st => {
+        const cat = CAT_MAP[g.category] || CAT_MAP.other;
+        const prog = subProgress(st);
+        const total = Number(st.total) || 0;
+        const rate = total > 0 ? Math.min(100, prog/total*100) : 0;
+        const sug = suggest(total, prog, st.end);
+        cards.push({
+          id: st.id, goalId: g.id, type: 'sub', status: subStatus(g, st),
+          cat: g.category, color: st.color || g.color || cat.color,
+          title: st.name, catTag: `${cat.icon} ${cat.name} · ${g.name}`,
+          progText: `${fmtNum(prog)} / ${fmtNum(total)} ${esc(st.unit||'')}`,
+          rate, end: st.end, sug,
+        });
+      });
+    });
+  }
+  if(kanbanCat !== 'all') cards = cards.filter(c => c.cat === kanbanCat);
+
+  board.innerHTML = columns.map(col => {
+    const list = cards.filter(c => c.status === col.key);
+    return `<div class="kanban-col">
+      <div class="kcol-head">${col.name} <span class="kcol-count">${list.length}</span></div>
+      <div class="kcol-body">
+        ${list.length ? list.map(kanbanCardHTML).join('') : '<div class="kc-empty">暂无卡片</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function kanbanCardHTML(c){
+  let leftTxt = '', leftCls = '';
+  if(isValidDate(c.end)){
+    const d = daysBetween(todayStr(), c.end);
+    if(d > 0) leftTxt = `剩 ${d+1} 天`;
+    else if(d === 0) leftTxt = '今天截止';
+    else { leftTxt = `逾期 ${-d} 天`; leftCls = 'bad'; }
+  }
+  const doneMark = c.status === 'done'
+    ? `<span class="kc-done-mark">✓ 已完成</span>`
+    : `<span>今日建议 <b>${fmtNum(c.sug)}</b></span>`;
+  return `<div class="kcard" style="--c:${esc(c.color)}"
+      data-act="kanban-click" data-id="${c.id}" data-type="${c.type}" data-goal="${c.goalId || ''}">
+    <div class="kc-head">
+      <span class="cat-tag" style="background:${esc(c.color)}1a;color:${esc(c.color)};font-size:11px;">${c.catTag}</span>
+    </div>
+    <div class="kc-title">${esc(c.title)}</div>
+    <div class="kc-bar"><div class="bar-fill" style="width:${c.rate}%;background:${esc(c.color)}"></div></div>
+    <div class="kc-meta"><span>${c.progText} · ${c.rate.toFixed(0)}%</span></div>
+    <div class="kc-meta">
+      <span class="${leftCls}">${leftTxt}</span>
+      ${doneMark}
+    </div>
+  </div>`;
+}
+
+function renderKanbanFilter(){
+  const bar = $('#kanbanFilterBar');
+  if(!bar) return;
+  const counts = {};
+  if(kanbanView === 'goal'){
+    state.goals.forEach(g => { counts[g.category] = (counts[g.category] || 0) + 1; });
+  }else{
+    state.goals.forEach(g => {
+      (g.subtasks || []).forEach(() => {
+        counts[g.category] = (counts[g.category] || 0) + 1;
+      });
+    });
+  }
+  const total = Object.values(counts).reduce((a,b) => a+b, 0);
+  let html = `<button class="fchip ${kanbanCat==='all'?'active':''}" data-kcat="all" style="--fc:#4f46e5">全部 <span class="cnt">${total}</span></button>`;
+  CATS.forEach(c => {
+    const n = counts[c.id] || 0;
+    if(n === 0 && kanbanCat !== c.id) return;
+    html += `<button class="fchip ${kanbanCat===c.id?'active':''}" data-kcat="${c.id}" style="--fc:${c.color}">${c.icon} ${c.name} <span class="cnt">${n}</span></button>`;
+  });
+  bar.innerHTML = html;
+}
+
+/* =========================================================
+   每日复盘（表单 + 历史）
+   ========================================================= */
+function renderQuickDates(){
+  const wrap = $('#quickDates');
+  if(!wrap) return;
+  const today = todayStr();
+  const cur = $('#rv-date').value;
+  let html = '';
+  for(let i = 0; i < QUICK_DAYS; i++){
+    const d = addDays(today, -i);
+    const label = i === 0 ? '今天' : (i === 1 ? '昨天' : `${i}天前`);
+    const has = hasReviewOn(d);
+    const cls = 'qd' + (d === cur ? ' active' : '') + (has ? ' has' : '');
+    const title = fmtCNFull(d) + (has ? ' · 已写复盘' : ' · 未写复盘');
+    html += `<button type="button" class="${cls}" data-d="${d}" title="${title}">${label}${has ? ' ✓' : ''}</button>`;
+  }
+  wrap.innerHTML = html;
+}
+
+function loadDailyReview(dateStr){
+  const rv = findDailyReview(dateStr);
+  const fields = ['achievement','reflection','gain','beauty','gratitude'];
+  fields.forEach(k => {
+    $('#dr-' + k).value = rv ? (rv[k] || '') : '';
+  });
+  const mode = $('#dr-mode');
+  if(rv){
+    mode.textContent = `正在编辑 ${fmtCNFull(dateStr)} 的复盘`;
+  }else{
+    mode.textContent = `${fmtCNFull(dateStr)} · 还没写，写完后点保存`;
+  }
+}
+
+function saveDailyReview(){
+  const date = $('#rv-date').value || todayStr();
+  const data = {
+    achievement: $('#dr-achievement').value.trim(),
+    reflection:  $('#dr-reflection').value.trim(),
+    gain:        $('#dr-gain').value.trim(),
+    beauty:      $('#dr-beauty').value.trim(),
+    gratitude:   $('#dr-gratitude').value.trim(),
+  };
+  const any = Object.values(data).some(v => v);
+  if(!any){ alert('还没有填写任何内容，先写一点吧'); return; }
+
+  const exist = findDailyReview(date);
+  if(exist){
+    Object.assign(exist, data);
+    exist.ts = Date.now();
+  }else{
+    state.reviews.push({ id: uid(), date, ...data, ts: Date.now() });
+  }
+  save();
+  renderDailyReviewList();
+  renderBanner();
+  renderQuickDates();
+  alert(`已保存 ${fmtCNFull(date)} 的每日复盘 ✅`);
+}
+
+function renderDailyReviewList(){
+  const wrap = $('#reviewList');
+  if(!wrap) return;
+  const list = [...state.reviews].sort((a,b) => a.date < b.date ? 1 : -1);
+  if(!list.length){
+    wrap.innerHTML = `<div class="empty">还没有复盘记录。<br><span style="font-size:12.5px;">每天收工前花 5 分钟，按五问模板写一写。</span></div>`;
+    return;
+  }
+  const secs = [
+    ['一、今日成就', 'achievement'],
+    ['二、今日反思', 'reflection'],
+    ['三、今日收获', 'gain'],
+    ['四、今日美好', 'beauty'],
+    ['五、今日感恩', 'gratitude'],
+  ];
+  wrap.innerHTML = list.map(rv => {
+    const hasAny = secs.some(([,k]) => rv[k]);
+    return `<div class="dr-hist">
+      <div class="dr-hist-head">
+        <span class="dr-hist-date">📅 ${fmtCNFull(rv.date)}</span>
+        <span class="dr-hist-weekday">${weekdayCN(rv.date)}</span>
+        <span class="acts">
+          <button class="icon-btn" data-act="edit-daily-review" data-id="${rv.id}" title="编辑">✏️</button>
+          <button class="icon-btn" data-act="del-daily-review" data-id="${rv.id}" title="删除">🗑️</button>
+        </span>
+      </div>
+      ${hasAny ? `<details>
+        <summary>展开查看详情</summary>
+        <div class="dr-hist-body">
+          ${secs.filter(([,k]) => rv[k]).map(([t,k]) =>
+            `<div class="dr-hist-sec"><div class="t">${t}</div><div class="c">${esc(rv[k])}</div></div>`
+          ).join('')}
+        </div>
+      </details>` : '<div class="muted tiny" style="margin-top:6px;">（这条复盘没有内容）</div>'}
+    </div>`;
+  }).join('');
+}
+
+/* =========================================================
+   本周复盘
+   ========================================================= */
+function currentWeekMonday(){
+  return getMonday(addDays(todayStr(), weekOffset * 7));
+}
+
+function renderWeeklyPanel(){
+  const range = $('#weekRange');
+  const sub = $('#weekSub');
+  if(!range) return;
+  const monday = currentWeekMonday();
+  const sunday = addDays(monday, 6);
+  range.textContent = `${fmtCNFull(monday)} — ${fmtCNFull(sunday)}`;
+  sub.textContent = (weekOffset === 0) ? '本周（周一到周日）' : '';
+
+  const wr = state.weeklyReviews[monday] || {};
+  $('#wr-events').value     = wr.events     || '';
+  $('#wr-plan').value       = wr.plan       || '';
+  $('#wr-reflection').value = wr.reflection || '';
+  $('#wr-gain').value       = wr.gain       || '';
+  $('#wr-nextplan').value   = wr.nextplan   || '';
+
+  const mode = $('#wr-mode');
+  const saved = state.weeklyReviews[monday];
+  mode.textContent = saved
+    ? `已保存 ${fmtCNFull(monday)} 那一周的复盘`
+    : `${fmtCNFull(monday)} 那一周还没写`;
+}
+
+function saveWeeklyReview(){
+  const monday = currentWeekMonday();
+  const data = {
+    events:     $('#wr-events').value.trim(),
+    plan:       $('#wr-plan').value.trim(),
+    reflection: $('#wr-reflection').value.trim(),
+    gain:       $('#wr-gain').value.trim(),
+    nextplan:   $('#wr-nextplan').value.trim(),
+  };
+  const any = Object.values(data).some(v => v);
+  if(!any){ alert('还没有填写任何内容，先写一点吧'); return; }
+  state.weeklyReviews[monday] = { ...data, ts: Date.now() };
+  save();
+  renderWeeklyPanel();
+  alert(`已保存 ${fmtCNFull(monday)} 那一周的本周复盘 ✅`);
+}
+
+/* =========================================================
+   打卡弹窗
+   ========================================================= */
+function collectPendingItems(){
+  const items = [];
+  state.goals.forEach(g => {
+    const cat = CAT_MAP[g.category] || CAT_MAP.other;
+    const subs = g.subtasks || [];
+    if(subs.length === 0){
+      const total = Number(g.total) || 0;
+      const prog = goalProgress(g);
+      if(prog >= total) return;
+      const remaining = Math.max(0, total - prog);
+      if(remaining <= 0) return;
+      items.push({
+        type: 'goal', goalId: g.id, subId: null,
+        name: g.name, parent: null,
+        color: g.color || cat.color,
+        unit: g.unit || '', total, prog, remaining,
+        sug: suggest(total, prog, g.end),
+      });
+    }else{
+      subs.forEach(st => {
+        const total = Number(st.total) || 0;
+        const prog = subProgress(st);
+        if(prog >= total) return;
+        const remaining = Math.max(0, total - prog);
+        if(remaining <= 0) return;
+        items.push({
+          type: 'sub', goalId: g.id, subId: st.id,
+          name: st.name, parent: g.name,
+          color: st.color || g.color || cat.color,
+          unit: st.unit || g.unit || '', total, prog, remaining,
+          sug: suggest(total, prog, st.end),
+        });
+      });
+    }
+  });
+  return items;
+}
+
+function openCheckinModal(){
+  const today = todayStr();
+  const items = collectPendingItems();
+
+  if(!items.length){
+    openModal(`
+      <h3>📅 今日打卡</h3>
+      <div class="sub">${fmtCNFull(today)}</div>
+      <div class="tc-all-done" style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:20px;color:#047857;font-weight:600;text-align:center;">
+        🎉 所有目标 / 子任务都已完成，休息一下！
+      </div>
+      <div class="modal-actions">
+        <button class="btn primary" data-act="close-modal">好的</button>
+      </div>
+    `);
+    return;
+  }
+
+  openModal(`
+    <h3>📅 今日打卡</h3>
+    <div class="sub">${fmtCNFull(today)} · 共 ${items.length} 项待打卡。建议量已预填，可自行修改。</div>
+    <div class="ck-list">
+      ${items.map(i => `
+        <div class="ck-row" data-goal="${i.goalId}" data-sub="${i.subId || ''}">
+          <span class="ck-dot" style="background:${esc(i.color)}"></span>
+          <div class="ck-info">
+            <div class="ck-name">${i.type === 'sub' ? `<span class="ck-parent">${esc(i.parent)} · </span>` : ''}${esc(i.name)}</div>
+            <div class="ck-meta">今日建议 <b>${fmtNum(i.sug)}</b> ${esc(i.unit)} · 剩余 ${fmtNum(i.remaining)} / ${fmtNum(i.total)} ${esc(i.unit)}</div>
+          </div>
+          <input type="number" class="ck-input" value="${round2(i.sug)}" step="any" min="0">
+          <button class="btn primary sm" data-act="quick-checkin">打卡</button>
+        </div>
+      `).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-act="close-modal">关闭</button>
+    </div>
+  `, true);
+}
+
+function quickCheckin(btn){
+  const row = btn.closest('.ck-row');
+  if(!row) return;
+  const goalId = row.dataset.goal;
+  const subId = row.dataset.sub || null;
+  const amt = parseFloat(row.querySelector('.ck-input').value);
+  if(!(amt > 0)){ alert('请输入大于 0 的数量'); return; }
+  const g = state.goals.find(x => x.id === goalId);
+  if(!g) return;
+  const node = subId ? g.subtasks.find(s => s.id === subId) : g;
+  if(!node) return;
+  node.logs.push({ date: todayStr(), amount: amt, note: '', ts: Date.now() });
+  save();
+  render();
+  openCheckinModal(); // 重建弹窗内容
+}
+
+/* =========================================================
+   数据管理：导出 / 导入 / 清空
+   ========================================================= */
+function exportBackup(){
+  try{
+    const data = JSON.stringify(state, null, 2);
+    const blob = new Blob([data], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `工作学习生活管理台_备份_${todayStr()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }catch(e){
+    alert('导出失败：' + e.message);
+  }
+}
+function importBackup(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    let data;
+    try{ data = JSON.parse(ev.target.result); }
+    catch(err){ alert('导入失败：文件不是有效的 JSON 格式。'); return; }
+    if(!data || typeof data !== 'object'){ alert('导入失败：文件内容不正确。'); return; }
+    const hasGoals = Array.isArray(data.goals) && data.goals.length > 0;
+    if(!hasGoals && !Array.isArray(data.reviews) && !Array.isArray(data.barriers)){
+      alert('导入失败：文件里没有找到可识别的数据。');
+      return;
+    }
+    const ok = confirm('导入会覆盖当前所有数据，建议先导出当前备份。\n\n确定要继续导入吗？');
+    if(!ok) return;
+    state = normalizeState(data);
+    save();
+    catFilter = 'all'; kanbanCat = 'all'; weekOffset = 0;
+    $('#rv-date').value = todayStr();
+    loadDailyReview(todayStr());
+    render();
+    renderQuickDates();
+    alert('导入成功 ✅ 已恢复到导入文件中的状态。');
+  };
+  reader.onerror = () => alert('读取文件失败，请重试。');
+  reader.readAsText(file);
+}
+function clearAllData(){
+  const input = prompt(
+    '此操作会删除所有目标、子任务、打卡记录、障碍记录、每日复盘、本周复盘，且不可撤销。\n\n' +
+    '如果确认要清空，请输入「清空全部数据」后点击确定。'
+  );
+  if(input !== '清空全部数据'){
+    if(input !== null) alert('输入不匹配，已取消清空操作。');
+    return;
+  }
+  state = normalizeState({});
+  save();
+  catFilter = 'all'; kanbanCat = 'all'; weekOffset = 0;
+  $('#rv-date').value = todayStr();
+  loadDailyReview(todayStr());
+  render();
+  renderQuickDates();
+  alert('已清空全部数据。');
+}
+
+/* =========================================================
+   弹窗
+   ========================================================= */
+function openModal(html, wide){
+  const root = $('#modalRoot');
+  root.innerHTML = `<div class="modal-backdrop"><div class="modal${wide ? ' wide' : ''}">${html}</div></div>`;
+  root.classList.add('open');
+  root.querySelector('.modal-backdrop').addEventListener('mousedown', e => {
+    if(e.target.classList.contains('modal-backdrop')) closeModal();
+  });
+}
+function closeModal(){
+  const root = $('#modalRoot');
+  root.classList.remove('open');
+  root.innerHTML = '';
+}
+
+function openGoalModal(goalId){
+  const g = goalId ? state.goals.find(x => x.id === goalId) : null;
+  const isNew = !g;
+  const d = g || {
+    name:'', category:'work', unit:'个', total:100,
+    start: todayStr(), end: addDays(todayStr(), 60),
+    color: PALETTE[state.goals.length % PALETTE.length],
+    obstacle:'', ifThen:''
+  };
+  const catOptions = CATS.map(c =>
+    `<option value="${c.id}" ${d.category===c.id?'selected':''}>${c.icon} ${c.name}</option>`).join('');
+
+  openModal(`
+    <h3>${isNew ? '新建目标' : '编辑目标'}</h3>
+    <div class="sub">目标要有明确的量和截止日，才能算得清“今天该干多少”。</div>
+    <div class="field"><label>目标名称</label>
+      <input type="text" id="f-name" placeholder="例：在年底完成 FFM 温循老化装备导入制造" value="${esc(d.name)}"></div>
+    <div class="row">
+      <div class="field"><label>分类</label><select id="f-cat">${catOptions}</select></div>
+      <div class="field"><label>配色</label><input type="color" id="f-color" value="${esc(d.color)}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>单位</label><input type="text" id="f-unit" value="${esc(d.unit)}" placeholder="个 / 台 / 章 / 份"></div>
+      <div class="field"><label>总量</label><input type="number" id="f-total" step="any" min="0" value="${esc(d.total)}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>起始日</label><input type="date" id="f-start" value="${esc(d.start)}"></div>
+      <div class="field"><label>截止日</label><input type="date" id="f-end" value="${esc(d.end)}"></div>
+    </div>
+    <div class="field"><label>达成目标或任务，我将会遇到哪些可能的障碍 / 困难？（选填）</label>
+      <textarea id="f-obstacle" placeholder="例：供应商参数迟迟不提供；下班后精力不够">${esc(d.obstacle||'')}</textarea></div>
+    <div class="field"><label>如果遇到，你该如何解决？（选填）</label>
+      <textarea id="f-ifthen" placeholder="例：立刻升级给采购负责人，同时用替代参数推进">${esc(d.ifThen||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-act="close-modal">取消</button>
+      <button class="btn primary" id="f-save">保存</button>
+    </div>
+  `);
+  setTimeout(() => $('#f-name').focus(), 60);
+
+  $('#f-save').onclick = () => {
+    const name = $('#f-name').value.trim();
+    if(!name){ alert('请填写目标名称'); return; }
+    const total = parseFloat($('#f-total').value);
+    if(!(total > 0)){ alert('总量需要是大于 0 的数字'); return; }
+    const obj = {
+      name,
+      category: $('#f-cat').value || 'other',
+      unit: $('#f-unit').value.trim() || '个',
+      total,
+      start: $('#f-start').value || todayStr(),
+      end: $('#f-end').value || addDays(todayStr(), 60),
+      color: $('#f-color').value || '#4f46e5',
+      obstacle: $('#f-obstacle').value.trim(),
+      ifThen: $('#f-ifthen').value.trim()
+    };
+    if(isNew){
+      state.goals.push({ id: uid(), ...obj, logs: [], subtasks: [] });
+    }else{
+      Object.assign(g, obj);
+    }
+    save(); closeModal(); render();
+  };
+}
+
+function openHintModal(goalId, subId){
+  const g = state.goals.find(x => x.id === goalId);
+  if(!g) return;
+  const node = subId ? g.subtasks.find(s => s.id === subId) : g;
+  if(!node) return;
+  const title = subId ? `子任务 · ${node.name}` : `目标 · ${g.name}`;
+  openModal(`
+    <h3>障碍与对策</h3>
+    <div class="sub">${esc(title)}</div>
+    <div class="field"><label>达成目标或任务，我将会遇到哪些可能的障碍 / 困难？</label>
+      <textarea id="h-obstacle">${esc(node.obstacle||'')}</textarea></div>
+    <div class="field"><label>如果遇到，你该如何解决？</label>
+      <textarea id="h-ifthen">${esc(node.ifThen||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-act="close-modal">取消</button>
+      <button class="btn primary" id="h-save">保存</button>
+    </div>
+  `);
+  $('#h-save').onclick = () => {
+    node.obstacle = $('#h-obstacle').value.trim();
+    node.ifThen = $('#h-ifthen').value.trim();
+    save(); closeModal(); render();
+  };
+}
+
+function openSubModal(goalId, subId){
+  const g = state.goals.find(x => x.id === goalId);
+  if(!g) return;
+  const st = subId ? g.subtasks.find(s => s.id === subId) : null;
+  const isNew = !st;
+  const d = st || {
+    name:'', unit: g.unit || '个', total:10,
+    start: g.start || todayStr(), end: g.end || addDays(todayStr(), 30),
+    color: g.color || '#4f46e5',
+    obstacle:'', ifThen:''
+  };
+  openModal(`
+    <h3>${isNew ? '添加子任务' : '编辑子任务'}</h3>
+    <div class="sub">所属目标：${esc(g.name)}</div>
+    <div class="field"><label>子任务名称</label>
+      <input type="text" id="s-name" placeholder="例：读完温控子系统设计文档" value="${esc(d.name)}"></div>
+    <div class="row">
+      <div class="field"><label>单位</label><input type="text" id="s-unit" value="${esc(d.unit)}"></div>
+      <div class="field"><label>总量</label><input type="number" id="s-total" step="any" min="0" value="${esc(d.total)}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>起始日</label><input type="date" id="s-start" value="${esc(d.start)}"></div>
+      <div class="field"><label>截止日</label><input type="date" id="s-end" value="${esc(d.end)}"></div>
+    </div>
+    <div class="field"><label>配色</label><input type="color" id="s-color" value="${esc(d.color)}"></div>
+    <div class="field"><label>达成目标或任务，我将会遇到哪些可能的障碍 / 困难？（选填）</label>
+      <textarea id="s-obstacle">${esc(d.obstacle||'')}</textarea></div>
+    <div class="field"><label>如果遇到，你该如何解决？（选填）</label>
+      <textarea id="s-ifthen">${esc(d.ifThen||'')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-act="close-modal">取消</button>
+      <button class="btn primary" id="s-save">保存</button>
+    </div>
+  `);
+  setTimeout(() => $('#s-name').focus(), 60);
+
+  $('#s-save').onclick = () => {
+    const name = $('#s-name').value.trim();
+    if(!name){ alert('请填写子任务名称'); return; }
+    const total = parseFloat($('#s-total').value);
+    if(!(total > 0)){ alert('总量需要是大于 0 的数字'); return; }
+    const obj = {
+      name,
+      unit: $('#s-unit').value.trim() || '个',
+      total,
+      start: $('#s-start').value || todayStr(),
+      end: $('#s-end').value || addDays(todayStr(), 30),
+      color: $('#s-color').value || g.color,
+      obstacle: $('#s-obstacle').value.trim(),
+      ifThen: $('#s-ifthen').value.trim()
+    };
+    if(isNew){ g.subtasks.push({ id: uid(), ...obj, logs: [] }); }
+    else { Object.assign(st, obj); }
+    save(); closeModal(); render();
+  };
+}
+
+function openCheckin(goalId, subId){
+  const g = state.goals.find(x => x.id === goalId);
+  if(!g) return;
+  const node = subId ? g.subtasks.find(s => s.id === subId) : g;
+  if(!node) return;
+  const isSub = !!subId;
+  const total = Number(node.total) || 0;
+  const prog = isSub ? subProgress(node) : selfLogs(g);
+  const remaining = Math.max(0, total - prog);
+  const sug = suggest(total, prog, node.end);
+
+  openModal(`
+    <h3>打卡 · ${esc(isSub ? node.name : g.name)}</h3>
+    <div class="sub">
+      当前 ${fmtNum(prog)} / ${fmtNum(total)} ${esc(node.unit||'')}，剩余 ${fmtNum(remaining)}。<br>
+      今日建议量 = 剩余量 ÷ 剩余天数 = <b>${fmtNum(sug)}</b> ${esc(node.unit||'')}（已预填，可修改）
+    </div>
+    <div class="row">
+      <div class="field"><label>日期</label><input type="date" id="ck-date" value="${todayStr()}"></div>
+      <div class="field"><label>本次完成量（${esc(node.unit||'')}）</label>
+        <input type="number" id="ck-amount" step="any" min="0" value="${round2(sug)}"></div>
+    </div>
+    <div class="field"><label>备注（选填）</label>
+      <input type="text" id="ck-note" placeholder="例：完成 3 个子系统文档接口梳理"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-act="close-modal">取消</button>
+      <button class="btn primary" id="ck-save">确认打卡</button>
+    </div>
+  `);
+  const inp = $('#ck-amount');
+  setTimeout(() => { inp.focus(); inp.select(); }, 60);
+
+  $('#ck-save').onclick = () => {
+    const amt = parseFloat($('#ck-amount').value);
+    if(!(amt > 0)){ alert('请输入大于 0 的数量'); return; }
+    const date = $('#ck-date').value || todayStr();
+    const note = $('#ck-note').value.trim();
+    node.logs.push({ date, amount: amt, note, ts: Date.now() });
+    save(); closeModal(); render();
+  };
+}
+
+/* =========================================================
+   事件绑定
+   ========================================================= */
+document.addEventListener('click', e => {
+  const fc = e.target.closest('.fchip[data-cat]');
+  if(fc){ catFilter = fc.dataset.cat; renderFilterBar(); renderGoals(); return; }
+
+  const kv = e.target.closest('.fchip[data-kview]');
+  if(kv){
+    kanbanView = kv.dataset.kview;
+    $$('.fchip[data-kview]').forEach(x => x.classList.toggle('active', x === kv));
+    kanbanCat = 'all';
+    renderKanban();
+    return;
+  }
+  const kc = e.target.closest('.fchip[data-kcat]');
+  if(kc){ kanbanCat = kc.dataset.kcat; renderKanban(); return; }
+
+  const qd = e.target.closest('.qd[data-d]');
+  if(qd){
+    const d = qd.dataset.d;
+    $('#rv-date').value = d;
+    loadDailyReview(d);
+    renderQuickDates();
+    return;
+  }
+
+  if(e.target.closest('#sidebarToggle')){
+    const sb = $('#sidebar');
+    sb.classList.toggle('collapsed');
+    try{ localStorage.setItem(SIDEBAR_KEY, sb.classList.contains('collapsed') ? '1' : '0'); }catch(_){}
+    return;
+  }
+  if(e.target.closest('#mobileToggle')){
+    $('#sidebar').classList.toggle('collapsed');
+    return;
+  }
+
+  const t = e.target.closest('[data-act]');
+  if(!t) return;
+  const act = t.dataset.act;
+  const id = t.dataset.id;
+  const subId = t.dataset.sub;
+
+  switch(act){
+    case 'close-modal': closeModal(); break;
+
+    case 'quick-checkin': quickCheckin(t); break;
+
+    case 'kanban-click': {
+      const type = t.dataset.type;
+      const goalId = t.dataset.goal;
+      switchTab('goals');
+      catFilter = 'all';
+      renderFilterBar(); renderGoals();
+      const targetId = (type === 'goal') ? id : goalId;
+      setTimeout(() => {
+        const el = document.getElementById('goal-' + targetId);
+        if(el){
+          el.scrollIntoView({behavior:'smooth', block:'center'});
+          el.classList.add('flash');
+          setTimeout(() => el.classList.remove('flash'), 1600);
+        }
+      }, 80);
+      break;
+    }
+
+    case 'edit-goal': openGoalModal(id); break;
+    case 'del-goal': {
+      const g = state.goals.find(x => x.id === id);
+      if(!g) break;
+      if(confirm(`确定删除目标「${g.name}」吗？\n它的所有子任务和打卡记录也会一起删除。`)){
+        state.goals = state.goals.filter(x => x.id !== id);
+        save(); render();
+      }
+      break;
+    }
+    case 'checkin-goal': openCheckin(id, null); break;
+    case 'checkin-sub': openCheckin(id, subId); break;
+    case 'add-sub': openSubModal(id, null); break;
+    case 'edit-sub': openSubModal(id, subId); break;
+    case 'del-sub': {
+      const g = state.goals.find(x => x.id === id);
+      if(!g) break;
+      const st = g.subtasks.find(s => s.id === subId);
+      if(!st) break;
+      if(confirm(`确定删除子任务「${st.name}」吗？`)){
+        g.subtasks = g.subtasks.filter(s => s.id !== subId);
+        save(); render();
+      }
+      break;
+    }
+    case 'edit-hint': openHintModal(id, null); break;
+    case 'edit-sub-hint': openHintModal(id, subId); break;
+    case 'del-hint': {
+      const g = state.goals.find(x => x.id === id);
+      if(!g) break;
+      if(confirm('确定清空这个目标的「障碍/困难」和「解决方案」吗？')){
+        g.obstacle = ''; g.ifThen = '';
+        save(); render();
+      }
+      break;
+    }
+    case 'del-sub-hint': {
+      const g = state.goals.find(x => x.id === id);
+      if(!g) break;
+      const st = g.subtasks.find(s => s.id === subId);
+      if(!st) break;
+      if(confirm('确定清空这个子任务的「障碍/困难」和「解决方案」吗？')){
+        st.obstacle = ''; st.ifThen = '';
+        save(); render();
+      }
+      break;
+    }
+
+    case 'del-barrier': {
+      state.barriers = state.barriers.filter(b => b.id !== id);
+      save(); render();
+      break;
+    }
+
+    case 'edit-daily-review': {
+      const rv = state.reviews.find(x => x.id === id);
+      if(!rv) break;
+      switchTab('reviews');
+      $('#rv-date').value = rv.date;
+      loadDailyReview(rv.date);
+      renderQuickDates();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => $('#dr-achievement')?.focus(), 200);
+      break;
+    }
+    case 'del-daily-review': {
+      const rv = state.reviews.find(x => x.id === id);
+      if(!rv) break;
+      if(confirm(`确定删除 ${fmtCNFull(rv.date)} 的复盘吗？`)){
+        state.reviews = state.reviews.filter(x => x.id !== id);
+        save();
+        if($('#rv-date').value === rv.date) loadDailyReview(rv.date);
+        renderDailyReviewList();
+        renderBanner();
+        renderQuickDates();
+      }
+      break;
+    }
+  }
+});
+
+function switchTab(name){
+  $$('.nav-item').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
+  $$('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+  $('#pageTitle').textContent = PAGE_TITLES[name] || '';
+
+  // 顶栏按钮：只有目标显示「新建目标」，只有每日复盘显示「打卡」
+  $('#btnNewGoal').style.display = (name === 'goals') ? '' : 'none';
+  $('#btnCheckin').style.display = (name === 'reviews') ? '' : 'none';
+
+  if(name === 'reviews'){
+    renderBanner();
+    renderQuickDates();
+    renderDailyReviewList();
+  }
+  if(name === 'kanban') renderKanban();
+  if(name === 'weekly') renderWeeklyPanel();
+
+  if(window.innerWidth <= 820){
+    $('#sidebar').classList.add('collapsed');
+  }
+}
+$('#nav').addEventListener('click', e => {
+  const b = e.target.closest('button[data-tab]');
+  if(!b) return;
+  switchTab(b.dataset.tab);
+});
+
+$('#btnNewGoal').addEventListener('click', () => openGoalModal(null));
+$('#btnCheckin').addEventListener('click', openCheckinModal);
+
+$('#br-save').addEventListener('click', () => {
+  const text = $('#br-text').value.trim();
+  if(!text){ alert('请先写下你遇到的障碍'); return; }
+  state.barriers.push({
+    id: uid(),
+    date: $('#br-date').value || todayStr(),
+    goalId: $('#br-goal').value || '',
+    text,
+    action: $('#br-action').value.trim(),
+    ts: Date.now()
+  });
+  save();
+  $('#br-text').value = '';
+  $('#br-action').value = '';
+  $('#br-date').value = todayStr();
+  render();
+});
+
+/* 每日复盘 */
+$('#rv-date').addEventListener('change', () => {
+  const d = $('#rv-date').value || todayStr();
+  // 允许补录最近 QUICK_DAYS 天
+  const minD = addDays(todayStr(), -(QUICK_DAYS - 1));
+  if(d < minD || d > todayStr()){
+    alert(`只能补录最近 ${QUICK_DAYS} 天内的复盘。`);
+    $('#rv-date').value = todayStr();
+    loadDailyReview(todayStr());
+    renderQuickDates();
+    return;
+  }
+  loadDailyReview(d);
+  renderQuickDates();
+});
+$('#dr-save').addEventListener('click', saveDailyReview);
+
+/* 本周复盘 */
+$('#weekPrev').addEventListener('click', () => { weekOffset--; renderWeeklyPanel(); });
+$('#weekNext').addEventListener('click', () => { weekOffset++; renderWeeklyPanel(); });
+$('#weekThis').addEventListener('click', () => { weekOffset = 0; renderWeeklyPanel(); });
+$('#wr-save').addEventListener('click', saveWeeklyReview);
+
+/* 数据管理 */
+$('#btnExport').addEventListener('click', exportBackup);
+$('#btnImport').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', e => {
+  importBackup(e.target.files[0]);
+  e.target.value = '';
+});
+$('#btnClearAll').addEventListener('click', clearAllData);
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeModal();
+});
+
+/* =========================================================
+   启动
+   ========================================================= */
+(function init(){
+  const now = new Date();
+  const week = ['日','一','二','三','四','五','六'][now.getDay()];
+  $('#todayLabel').textContent =
+    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 · 星期${week}`;
+
+  try{
+    if(localStorage.getItem(SIDEBAR_KEY) === '1'){
+      $('#sidebar').classList.add('collapsed');
+    }
+  }catch(_){}
+
+  if(window.innerWidth <= 820){
+    $('#sidebar').classList.add('collapsed');
+  }
+
+  $('#br-date').value = todayStr();
+
+  // 每日复盘初始化
+  const minD = addDays(todayStr(), -(QUICK_DAYS - 1));
+  $('#rv-date').min = minD;
+  $('#rv-date').max = todayStr();
+  $('#rv-date').value = todayStr();
+  loadDailyReview(todayStr());
+
+  render();
+  renderQuickDates();
+  switchTab('goals');
+})();
+</script>
+</body>
+</html>
